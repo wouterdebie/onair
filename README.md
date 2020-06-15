@@ -1,9 +1,8 @@
 # Onair
 
-Command line utility that calls a IFTTT webhook when any webcam turns on.
+Command line utility that calls an [IFTTT](https://ifttt.com) webhook when any webcam turns on or off.
 
-See it in action at https://photos.app.goo.gl/KkNWri8MQts85ScP8
-
+See it in action in [this video](https://photos.app.goo.gl/KkNWri8MQts85ScP8). I'm using an [eMylo smart relay](https://www.amazon.com/gp/product/B07FPCJ1L4/ref=ppx_yo_dt_b_search_asin_title?ie=UTF8&psc=1) inside an [On Air](https://www.amazon.com/gp/product/B00JFL0F6Y/ref=ppx_yo_dt_b_search_asin_title?ie=UTF8&psc=1) light. The [eMylo smart relay](https://www.amazon.com/gp/product/B07FPCJ1L4/ref=ppx_yo_dt_b_search_asin_title?ie=UTF8&psc=1) is compatible with the [Brilliant Smart App](https://play.google.com/store/apps/details?id=com.brilliantlighting.brain&hl=en_US) that in turn integrates with [IFTTT](https://ifttt.com/brilliant_smart)
 ## Background
 
 I built this utility to toggle an "On Air" sign outside my home office when I'm on video conference calls. The utility will monitor every camera connected and will trigger configured IFTTT webhook events when any camera turns on, or when all turn off.
