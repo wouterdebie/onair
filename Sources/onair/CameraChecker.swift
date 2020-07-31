@@ -6,7 +6,7 @@
 //
 import AVFoundation
 
-class CameraChecker: USBWatcherDelegate {
+class CameraChecker: NSObject, USBWatcherDelegate, URLSessionDelegate {
     private var cameras: [Camera] = []
     private var onEvent: String
     private var offEvent: String
@@ -20,12 +20,14 @@ class CameraChecker: USBWatcherDelegate {
     
     
     init(onEvent: String, offEvent: String, key: String, localUrl: String?, localCheckString: String?){
+        
         self.onEvent = onEvent
         self.offEvent = offEvent
         self.key = key
         self.localUrl = localUrl
         self.localCheckString = localCheckString
         
+        super.init()
         if localUrl == nil {
             print("Local checking disabled!")
             localCheck = false
@@ -94,7 +96,7 @@ class CameraChecker: USBWatcherDelegate {
         sessionConfig.timeoutIntervalForRequest = 2.0
         sessionConfig.timeoutIntervalForResource = 4.0
         
-        let session = URLSession(configuration: sessionConfig)
+        let session = URLSession(configuration: sessionConfig, delegate: self, delegateQueue: nil)
         
         let semaphore = DispatchSemaphore(value: 0)
         let task = session.dataTask(with: URL(string: localUrl!)!){(data, response, error) in
@@ -102,12 +104,21 @@ class CameraChecker: USBWatcherDelegate {
                 semaphore.signal()
                 return
             }
+
             local = String(data: data, encoding: .utf8)!.contains(self.localCheckString!)
             semaphore.signal()
         }
         task.resume()
         _ = semaphore.wait(timeout: DispatchTime.distantFuture)
         return local
+    }
+    
+    // URLSession delegate method to ignore SSL certificate validity
+    func urlSession(_ session: URLSession, didReceive challenge: URLAuthenticationChallenge, completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void) {
+        //Trust the certificate even if not valid
+        let urlCredential = URLCredential(trust: challenge.protectionSpace.serverTrust!)
+        
+        completionHandler(.useCredential, urlCredential)
     }
     
     // If we're initialized and a device is added or removed, we crudely exit.
