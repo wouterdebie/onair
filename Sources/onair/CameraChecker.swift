@@ -5,6 +5,9 @@
 //  Created by wouter.de.bie on 11/21/19.
 //
 import AVFoundation
+//import Logging
+
+//let logger = Logger(label: "nl.evenflow.onair.CameraChecker")
 
 class CameraChecker: NSObject, USBWatcherDelegate, URLSessionDelegate {
     private var cameras: [Camera] = []
@@ -29,7 +32,7 @@ class CameraChecker: NSObject, USBWatcherDelegate, URLSessionDelegate {
         
         super.init()
         if localUrl == nil {
-            print("Local checking disabled!")
+            logger.info("Local checking disabled!")
             localCheck = false
         }
         
@@ -39,10 +42,10 @@ class CameraChecker: NSObject, USBWatcherDelegate, URLSessionDelegate {
     }
     
     func initCameras() {
-        print("Camera(s) found:")
+        logger.info("Camera(s) found:")
         for device in AVCaptureDevice.devices(for: AVMediaType.video) {
             let camera = Camera(captureDevice: device, onChange: self.checkCameras)
-            print("  - \(camera)")
+            logger.info("  - \(camera)")
             cameras.append(camera)
         }
     }
@@ -53,10 +56,10 @@ class CameraChecker: NSObject, USBWatcherDelegate, URLSessionDelegate {
         
         if localCheck {
             if !isLocal() {
-                print("Location is not local. Skipping..")
+                logger.info("Location is not local. Skipping..")
                 return
             } else {
-                print("Location is local!")
+                logger.info("Location is local!")
             }
         }
         
@@ -73,13 +76,13 @@ class CameraChecker: NSObject, USBWatcherDelegate, URLSessionDelegate {
         let session = URLSession.shared
         let task = session.dataTask(with: url) {(data, response, error) in
             if error == nil {
-                print("IFTTT \(event) called successfully")
+                logger.info("IFTTT \(event) called successfully")
             }
         }
         
         task.resume()
         createNotification(message: message)
-        print(message)
+        logger.info("Notification: \(message)")
     }
     
     func createNotification(message: String) {
@@ -127,14 +130,14 @@ class CameraChecker: NSObject, USBWatcherDelegate, URLSessionDelegate {
     // devices, etc.
     func deviceAdded(_ device: io_object_t) {
         if isInitialized {
-            print("Device added: \(device.name() ?? "<unknown>")")
+            logger.info("Device added: \(device.name() ?? "<unknown>")")
             exit(0)
         }
     }
     
     func deviceRemoved(_ device: io_object_t) {
         if isInitialized {
-            print("Device removed: \(device.name() ?? "<unknown>")")
+            logger.info("Device removed: \(device.name() ?? "<unknown>")")
             exit(0)
         }
     }

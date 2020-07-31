@@ -8,6 +8,9 @@
 import Cocoa
 import SPMUtility
 import Basic
+import Logging
+
+let logger = Logger(label: "nl.evenflow.onair")
 
 // Main run loop
 // We run the actual CameraChecker in a sub process, since it will
@@ -92,10 +95,10 @@ do {
     
     
 } catch ArgumentParserError.expectedValue(let value) {
-    print("Missing value for argument \(value).")
+    logger.critical("Missing value for argument \(value).")
     exit(1)
 } catch ArgumentParserError.expectedArguments(let parser, let stringArray) {
-    print("Missing arguments: \(stringArray.joined()).")
+    logger.critical("Missing arguments: \(stringArray.joined()).")
     parser.printUsage(on: stdoutStream)
     exit(1)
 } catch {
