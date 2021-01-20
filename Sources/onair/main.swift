@@ -6,8 +6,8 @@
 //  Copyright © 2019 evenflow. All rights reserved.
 //
 import Cocoa
-import SPMUtility
-import Basic
+import TSCUtility
+import TSCBasic
 import Logging
 
 let logger = Logger(label: "nl.evenflow.onair")
