@@ -18,7 +18,6 @@ let logger = Logger(label: "nl.evenflow.onair")
 // crude, but it's a simple way of reinitializing all cams whenever
 // something changes.
 
-
 var childArgs: [String]
 
 let parser = ArgumentParser(commandName: "onair",
