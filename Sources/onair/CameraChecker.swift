@@ -50,6 +50,9 @@ class CameraChecker: NSObject, USBWatcherDelegate, URLSessionDelegate {
                 cameras.append(camera)
             }
         }
+        for camera in cameras {
+            camera.report()
+        }
     }
     
     func checkCameras() {
