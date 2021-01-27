@@ -16,19 +16,34 @@ class Camera: CustomStringConvertible {
         mElement: CMIOObjectPropertyElement(kCMIOObjectPropertyElementWildcard)
     )
     private var listener: CMIOObjectPropertyListenerBlock
+    var isVirtual: Bool = false
     
     init(captureDevice: AVCaptureDevice, onChange: @escaping () -> Void){
         self.captureDevice = captureDevice
         self.id = captureDevice.value(forKey: "_connectionID")! as! CMIOObjectID
         
-        // Register the onChange callback to a change in the "running" status of the camera.
-        // We'll let the onChange callback figure out what the status of the camera is,
-        // rather than passing in the status, since all statuses have to be concidered.
+        // Figure out if this is a virtual (DAL) device or an actual hardware device.
+        // It seems that DAL devices have kCMIODevicePropertyLatency, while normal
+        // AVCaptureDevices don't.
+        var latency_pa = CMIOObjectPropertyAddress(
+            mSelector: CMIOObjectPropertySelector(kCMIODevicePropertyLatency),
+            mScope: CMIOObjectPropertyScope(kCMIOObjectPropertyScopeWildcard),
+            mElement: CMIOObjectPropertyElement(kCMIOObjectPropertyElementWildcard)
+        )
+        var dataSize = UInt32(0)
         listener = {
             (_, _) -> Void in
             onChange()
         }
-        CMIOObjectAddPropertyListenerBlock(id, &STATUS_PA, DispatchQueue.main, listener)
+        
+        if CMIOObjectGetPropertyDataSize(id, &latency_pa, 0, nil, &dataSize) == OSStatus(kCMIOHardwareNoError) {
+            isVirtual = true
+        } else {
+            // Register the onChange callback to a change in the "running" status of the camera.
+            // We'll let the onChange callback figure out what the status of the camera is,
+            // rather than passing in the status, since all statuses have to be concidered
+            CMIOObjectAddPropertyListenerBlock(id, &STATUS_PA, DispatchQueue.main, listener)
+        }
     }
     
     func isOn() -> Bool {
