@@ -6,13 +6,10 @@ import PackageDescription
 let package = Package(
     name: "onair",
     platforms: [
-        .macOS(.v10_13),
+        .macOS(.v10_15),
     ],
     dependencies: [
-        // Dependencies declare other packages that this package depends on.
-        // .package(url: /* package url */, from: "1.0.0"),
-         .package(url: "https://github.com/apple/swift-package-manager.git", from: "0.5.0"),
-         .package(url: "https://github.com/apple/swift-log.git", from: "1.0.0"),
+         .package(url: "https://github.com/apple/swift-log.git", from: "1.4.0"),
          .package(url: "https://github.com/apple/swift-tools-support-core.git", from: "0.1.12"),
     ],
     targets: [

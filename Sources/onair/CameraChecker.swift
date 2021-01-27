@@ -43,7 +43,13 @@ class CameraChecker: NSObject, USBWatcherDelegate, URLSessionDelegate {
     
     func initCameras() {
         logger.info("Camera(s) found:")
-        for device in AVCaptureDevice.devices(for: AVMediaType.video) {
+        let deviceDescoverySession = AVCaptureDevice.DiscoverySession.init(
+                                        deviceTypes: [AVCaptureDevice.DeviceType.builtInWideAngleCamera,
+                                                      AVCaptureDevice.DeviceType.externalUnknown],
+                                        mediaType: AVMediaType.video,
+                                        position: AVCaptureDevice.Position.unspecified)
+
+        for device in deviceDescoverySession.devices {
             let camera = Camera(captureDevice: device, onChange: self.checkCameras)
             if !camera.isVirtual {
                 logger.info("  - \(camera)")
