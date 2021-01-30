@@ -20,9 +20,10 @@ class CameraChecker: NSObject, USBWatcherDelegate, URLSessionDelegate {
     private var usbWatcher: USBWatcher!
     private var isInitialized: Bool = false
     private var localCheck = true
+    private var ignoreCameras: [String] = []
     
     
-    init(onEvent: String, offEvent: String, key: String, localUrl: String?, localCheckString: String?){
+    init(onEvent: String, offEvent: String, key: String, localUrl: String?, localCheckString: String?, ignore: String?){
         
         self.onEvent = onEvent
         self.offEvent = offEvent
@@ -35,6 +36,11 @@ class CameraChecker: NSObject, USBWatcherDelegate, URLSessionDelegate {
             logger.info("Local checking disabled!")
             localCheck = false
         }
+        
+        if (ignore != nil) {
+            ignoreCameras = (ignore?.split(separator: ",").map { String($0) })!
+        }
+            
         
         usbWatcher = USBWatcher(delegate: self)
         initCameras()
@@ -50,9 +56,17 @@ class CameraChecker: NSObject, USBWatcherDelegate, URLSessionDelegate {
                                         position: AVCaptureDevice.Position.unspecified)
 
         for device in deviceDescoverySession.devices {
+            let name = "\(device.manufacturer)/\(device.localizedName)"
+            if ignoreCameras.contains(name){
+                logger.info(" - \(name) (ignored)")
+                continue
+            }
+            
             let camera = Camera(captureDevice: device, onChange: self.checkCameras)
-            if !camera.isVirtual {
-                logger.info("  - \(camera)")
+            if camera.isVirtual {
+                logger.info(" - \(camera) (virtual, ignored)")
+            } else  {
+                logger.info(" - \(camera)")
                 cameras.append(camera)
             }
         }

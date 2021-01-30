@@ -35,6 +35,9 @@ do {
     let localStringOption = parser.add(option: "--local-string",
                               kind: String.self, usage: "(optional) String to look for to see if local")
 
+    let ignoreCameratOption = parser.add(option: "--ignore",
+                                         kind: String.self, usage: "(optional) Comma-separated string of camera names to ignore")
+    
     let args = Array(CommandLine.arguments.dropFirst())
     let result = try parser.parse(args)
 
@@ -67,6 +70,11 @@ do {
         childArgs += ["--local-url", localUrl!, "--local-string", localString!]
     }
     
+    let ignoreCameras = result.get(ignoreCameratOption)
+    if ignoreCameras != nil {
+        childArgs += ["--ignore", ignoreCameras!]
+    }
+    
     let processInfo = ProcessInfo.processInfo
     var environment = processInfo.environment
     
@@ -75,7 +83,8 @@ do {
                       offEvent: off,
                       key: key,
                       localUrl: localUrl,
-                      localCheckString: localString).checkCameras()
+                      localCheckString: localString,
+                      ignore: ignoreCameras).checkCameras()
         
         RunLoop.main.run()
     } else {
