@@ -9,14 +9,38 @@ import Cocoa
 import TSCUtility
 import TSCBasic
 import Logging
+import Foundation
+
+
+
 
 let logger = Logger(label: "nl.evenflow.onair")
 
-// Main run loop
 // We run the actual CameraChecker in a sub process, since it will
 // exit if it encounters added or removed USB devices. This is super
 // crude, but it's a simple way of reinitializing all cams whenever
 // something changes.
+
+var child: Foundation.Process?
+
+// Setup SIGINT and SIGTERM to terminate both the parent and child process.
+signal(SIGINT, SIG_IGN)
+signal(SIGTERM, SIG_IGN)
+
+let sigintSrc = DispatchSource.makeSignalSource(signal: SIGINT, queue: .main)
+let sigtermSrc = DispatchSource.makeSignalSource(signal: SIGTERM, queue: .main)
+
+func die() {
+    logger.info("Terminating..")
+    child?.terminate()
+    exit(0)
+}
+
+sigintSrc.setEventHandler(handler: die)
+sigintSrc.resume()
+
+sigtermSrc.setEventHandler(handler: die)
+sigtermSrc.resume()
 
 var childArgs: [String]
 
@@ -78,6 +102,8 @@ do {
     let processInfo = ProcessInfo.processInfo
     var environment = processInfo.environment
     
+
+    
     if environment["ONAIR_SPECIAL_VAR"] != nil {
         CameraChecker(onEvent: on,
                       offEvent: off,
@@ -92,12 +118,13 @@ do {
         while (true) {
             environment["ONAIR_SPECIAL_VAR"] = "1"
             
-            let child = Process()
-            child.launchPath = processInfo.arguments[0]
-            child.environment = environment
-            child.arguments = childArgs
-            child.launch()
-            child.waitUntilExit()
+            child = Process()
+         
+            child!.launchPath = processInfo.arguments[0]
+            child!.environment = environment
+            child!.arguments = childArgs
+            child!.launch()
+            child!.waitUntilExit()
         }
     }
     
