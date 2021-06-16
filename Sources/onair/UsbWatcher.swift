@@ -10,7 +10,7 @@ import IOKit
 import IOKit.usb
 import IOKit.usb.IOUSBLib
 
-public protocol USBWatcherDelegate: class {
+public protocol USBWatcherDelegate: AnyObject {
     /// Called on the main thread when a device is connected.
     func deviceAdded(_ device: io_object_t)
     
@@ -33,9 +33,9 @@ public class USBWatcher {
             let watcher = Unmanaged<USBWatcher>.fromOpaque(instance!).takeUnretainedValue()
             let handler: ((io_iterator_t) -> Void)?
             switch iterator {
-                case watcher.addedIterator: handler = watcher.delegate?.deviceAdded
-                case watcher.removedIterator: handler = watcher.delegate?.deviceRemoved
-                default: assertionFailure("received unexpected IOIterator"); return
+            case watcher.addedIterator: handler = watcher.delegate?.deviceAdded
+            case watcher.removedIterator: handler = watcher.delegate?.deviceRemoved
+            default: assertionFailure("received unexpected IOIterator"); return
             }
             while case let device = IOIteratorNext(iterator), device != IO_OBJECT_NULL {
                 handler?(device)
