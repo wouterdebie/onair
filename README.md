@@ -45,6 +45,8 @@ $ cp .build/release/onair ~/bin
   <string>nl.evenflow.onair</string>
   <key>OnDemand</key>
   <false/>
+  <key>Program</key>
+  <string>/Users/wouterdebie/bin/onair</string>
   <key>ProgramArguments</key>
   <array>
       <string>/Users/wouterdebie/bin/onair</string>
