@@ -20,6 +20,7 @@ OPTIONS:
   --ignore         (optional) Comma-separated list of cameras to ignore
   --off            IFTTT Webhook event to call when a camera turns off
   --on             IFTTT Webhook event to call when a camera turns on
+  --debug          Enable additional debugging
   --help           Display available options
 ```
 
@@ -33,7 +34,7 @@ $ cp .build/release/onair ~/bin
 - Create two [IFTTT](https//iftttt.com) applets that trigger on a [Webhook](https://ifttt.com/maker_webhooks); one that you want to trigger when any webcam turns on and one that you want to trigger when all webcams are off. The event names for both webhooks will be used as `--on` and `--off` parameter values.
 - Look up your webhook key at [Webhook](https://ifttt.com/maker_webhooks) --> Documentation. Use this as the `--key` parameter value.
 - In case you want to enable checking if you're on a local network or not, use the `--local-url` parameter to specify a local url you'd like to check (e.g. your router) and use `--local-string` to specify what string you want to check for to determine if you're on a local network or not.
-- Some virtual devices will automatically be skipped, since they always report to be on. In case you happen to have a virtual camera that is not detected correctly, use `--ignore` to ignore that specific camera.
+- In case you happen to have a camera that is not detected correctly, use `--ignore` to ignore that specific camera.
 
 ## Example launchd configuration
 ```xml
@@ -64,3 +65,4 @@ $ cp .build/release/onair ~/bin
 </dict>
 </plist>
 ```
+Place the file in `~/Library/LaunchAgents/nl.evenflow.onair.plist` and run `launchctl load ~/Library/LaunchAgents/nl.evenflow.onair.plist`.
