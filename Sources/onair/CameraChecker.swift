@@ -1,11 +1,10 @@
 //
 //  CameraChecker.swift
-//  
+//
 //
 //  Created by wouter.de.bie on 11/21/19.
 //
 import AVFoundation
-//import Logging
 
 //let logger = Logger(label: "nl.evenflow.onair.CameraChecker")
 
@@ -21,32 +20,34 @@ class CameraChecker: NSObject, USBWatcherDelegate, URLSessionDelegate {
     private var isInitialized: Bool = false
     private var localCheck = true
     private var ignoreCameras: [String] = []
-    
-    
-    init(onEvent: String, offEvent: String, key: String, localUrl: String?, localCheckString: String?, ignore: String?){
-        
+    private var debug: Bool
+
+
+    init(onEvent: String, offEvent: String, key: String, localUrl: String?, localCheckString: String?, ignore: String?, debug: Bool){
+
         self.onEvent = onEvent
         self.offEvent = offEvent
         self.key = key
         self.localUrl = localUrl
         self.localCheckString = localCheckString
-        
+        self.debug = debug
+
         super.init()
         if localUrl == nil {
             logger.info("Local checking disabled!")
             localCheck = false
         }
-        
+
         if (ignore != nil) {
             ignoreCameras = (ignore?.split(separator: ",").map { String($0) })!
         }
-            
-        
+
+
         usbWatcher = USBWatcher(delegate: self)
         initCameras()
         isInitialized =  true
     }
-    
+
     func initCameras() {
         logger.info("Camera(s) found:")
         let deviceDescoverySession = AVCaptureDevice.DiscoverySession.init(
@@ -61,21 +62,23 @@ class CameraChecker: NSObject, USBWatcherDelegate, URLSessionDelegate {
                 logger.info(" - \(name) (ignored)")
                 continue
             }
-            
+
             let camera = Camera(captureDevice: device, onChange: self.checkCameras)
-            if camera.isVirtual {
-                logger.info(" - \(camera) (virtual, ignored)")
-            } else  {
-                logger.info(" - \(camera)")
-                cameras.append(camera)
+            logger.info(" - \(camera)")
+            cameras.append(camera)
+
+            if self.debug {
+                for camera in cameras {
+                    camera.report()
+                }
             }
         }
     }
-    
+
     func checkCameras() {
         let event: String
         let message: String
-        
+
         if localCheck {
             if !isLocal() {
                 logger.info("Location is not local. Skipping..")
@@ -84,7 +87,7 @@ class CameraChecker: NSObject, USBWatcherDelegate, URLSessionDelegate {
                 logger.info("Location is local!")
             }
         }
-        
+
         if(cameras.contains{$0.isOn()}){
             let cameraString = cameras.filter{$0.isOn()}.map{$0.description}.joined(separator: ", ")
             message = "Camera(s) \(cameraString) are on"
@@ -93,7 +96,7 @@ class CameraChecker: NSObject, USBWatcherDelegate, URLSessionDelegate {
             message = "All cameras off"
             event = offEvent
         }
-        
+
         let url = URL(string: String(format: templateURL, event, key))!
         let session = URLSession.shared
         let task = session.dataTask(with: url) {(data, response, error) in
@@ -101,12 +104,12 @@ class CameraChecker: NSObject, USBWatcherDelegate, URLSessionDelegate {
                 logger.info("IFTTT \(event) called successfully")
             }
         }
-        
+
         task.resume()
         createNotification(message: message)
         logger.info("Notification: \(message)")
     }
-    
+
     func createNotification(message: String) {
         let task = Process()
         task.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")
@@ -114,15 +117,15 @@ class CameraChecker: NSObject, USBWatcherDelegate, URLSessionDelegate {
         task.launch()
         task.waitUntilExit()
     }
-    
+
     func isLocal() -> Bool{
         var local: Bool = false
         let sessionConfig = URLSessionConfiguration.default
         sessionConfig.timeoutIntervalForRequest = 2.0
         sessionConfig.timeoutIntervalForResource = 4.0
-        
+
         let session = URLSession(configuration: sessionConfig, delegate: self, delegateQueue: nil)
-        
+
         let semaphore = DispatchSemaphore(value: 0)
         let task = session.dataTask(with: URL(string: localUrl!)!){(data, response, error) in
             guard let data = data else {
@@ -137,15 +140,15 @@ class CameraChecker: NSObject, USBWatcherDelegate, URLSessionDelegate {
         _ = semaphore.wait(timeout: DispatchTime.distantFuture)
         return local
     }
-    
+
     // URLSession delegate method to ignore SSL certificate validity
     func urlSession(_ session: URLSession, didReceive challenge: URLAuthenticationChallenge, completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void) {
         //Trust the certificate even if not valid
         let urlCredential = URLCredential(trust: challenge.protectionSpace.serverTrust!)
-        
+
         completionHandler(.useCredential, urlCredential)
     }
-    
+
     // If we're initialized and a device is added or removed, we crudely exit.
     // Since we're running in a sub process, everything will be reinitalized
     // anyway and we don't need to worry about removing listeners, traversing
@@ -156,7 +159,7 @@ class CameraChecker: NSObject, USBWatcherDelegate, URLSessionDelegate {
             exit(0)
         }
     }
-    
+
     func deviceRemoved(_ device: io_object_t) {
         if isInitialized {
             logger.info("Device removed: \(device.name() ?? "<unknown>")")

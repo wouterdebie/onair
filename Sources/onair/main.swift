@@ -43,22 +43,25 @@ sigtermSrc.resume()
 struct OnAir : ParsableCommand {
     @Option(help: ArgumentHelp("IFTTT Webhook event to call when a camera turns on", valueName: "event"))
     var on: String
-    
+
     @Option(help: ArgumentHelp("IFTTT Webhook event to call when a camera turns off", valueName: "event"))
     var off: String
-    
+
     @Option(help: ArgumentHelp("IFTTT Webhook key", valueName: "key"))
     var key: String
-    
+
     @Option(help: ArgumentHelp("(optional) URL to call to see if local", valueName: "url"))
     var localUrl: String?
-    
+
     @Option(help: ArgumentHelp("(optional) String to look for to see if local", valueName: "string"))
     var localString: String?
-    
+
     @Option(help: ArgumentHelp("(optional) Comma-separated list of camera names to ignore", valueName: "list"))
     var ignore: String?
-    
+
+    @Flag(help: ArgumentHelp("Show extra debug information"))
+    var debug = false
+
     mutating func validate() throws {
         if localUrl != nil && localString == nil {
             throw ValidationError("--local-string required when using --local-url")
@@ -80,16 +83,22 @@ struct OnAir : ParsableCommand {
             childArgs += ["--ignore", ignore!]
         }
 
+        if debug {
+            childArgs += ["--debug"]
+        }
+
         let processInfo = ProcessInfo.processInfo
         var environment = processInfo.environment
 
         if environment["ONAIR_SPECIAL_VAR"] != nil {
+            logger.info("Debug in child: \(debug)")
             CameraChecker(onEvent: on,
                           offEvent: off,
                           key: key,
                           localUrl: localUrl,
                           localCheckString: localString,
-                          ignore: ignore).checkCameras()
+                          ignore: ignore,
+                          debug: debug).checkCameras()
             RunLoop.main.run()
         } else {
             // We're in the parent.

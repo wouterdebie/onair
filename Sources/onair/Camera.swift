@@ -1,6 +1,6 @@
 //
 //  Camera.swift
-//  
+//
 //
 //  Created by wouter.de.bie on 11/21/19.
 //
@@ -16,36 +16,19 @@ class Camera: CustomStringConvertible {
         mElement: CMIOObjectPropertyElement(kCMIOObjectPropertyElementWildcard)
     )
     private var listener: CMIOObjectPropertyListenerBlock
-    var isVirtual: Bool = false
-    
+
     init(captureDevice: AVCaptureDevice, onChange: @escaping () -> Void){
         self.captureDevice = captureDevice
         self.id = captureDevice.value(forKey: "_connectionID")! as! CMIOObjectID
-        
-        // Figure out if this is a virtual (DAL) device or an actual hardware device.
-        // It seems that DAL devices have kCMIODevicePropertyLatency, while normal
-        // AVCaptureDevices don't.
-        var latency_pa = CMIOObjectPropertyAddress(
-            mSelector: CMIOObjectPropertySelector(kCMIODevicePropertyLatency),
-            mScope: CMIOObjectPropertyScope(kCMIOObjectPropertyScopeWildcard),
-            mElement: CMIOObjectPropertyElement(kCMIOObjectPropertyElementWildcard)
-        )
-        var dataSize = UInt32(0)
+
         listener = {
             (_, _) -> Void in
             onChange()
         }
-        
-        if CMIOObjectGetPropertyDataSize(id, &latency_pa, 0, nil, &dataSize) == OSStatus(kCMIOHardwareNoError) {
-            isVirtual = true
-        } else {
-            // Register the onChange callback to a change in the "running" status of the camera.
-            // We'll let the onChange callback figure out what the status of the camera is,
-            // rather than passing in the status, since all statuses have to be concidered
-            CMIOObjectAddPropertyListenerBlock(id, &STATUS_PA, DispatchQueue.main, listener)
-        }
+
+        CMIOObjectAddPropertyListenerBlock(id, &STATUS_PA, DispatchQueue.main, listener)
     }
-    
+
     func isOn() -> Bool {
         // Test if the device is on through some magic. If the pointee is > 0, the device is active.
         var (dataSize, dataUsed) = (UInt32(0), UInt32(0))
@@ -57,6 +40,56 @@ class Camera: CustomStringConvertible {
         }
         return false
     }
-    
+
+        func report() -> Void{
+        logger.info("Report:")
+        logger.info("\(self)")
+        let props = ["kCMIODevicePropertyPlugIn": kCMIODevicePropertyPlugIn,
+        "kCMIODevicePropertyDeviceUID": kCMIODevicePropertyDeviceUID,
+        "kCMIODevicePropertyModelUID": kCMIODevicePropertyModelUID,
+        "kCMIODevicePropertyTransportType": kCMIODevicePropertyTransportType,
+        "kCMIODevicePropertyDeviceIsAlive": kCMIODevicePropertyDeviceIsAlive,
+        "kCMIODevicePropertyDeviceHasChanged": kCMIODevicePropertyDeviceHasChanged,
+        "kCMIODevicePropertyDeviceIsRunning": kCMIODevicePropertyDeviceIsRunning,
+        "kCMIODevicePropertyDeviceIsRunningSomewhere": kCMIODevicePropertyDeviceIsRunningSomewhere,
+        "kCMIODevicePropertyDeviceCanBeDefaultDevice": kCMIODevicePropertyDeviceCanBeDefaultDevice,
+        "kCMIODevicePropertyHogMode": kCMIODevicePropertyHogMode,
+        "kCMIODevicePropertyLatency": kCMIODevicePropertyLatency,
+        "kCMIODevicePropertyStreams": kCMIODevicePropertyStreams,
+        "kCMIODevicePropertyStreamConfiguration": kCMIODevicePropertyStreamConfiguration,
+        "kCMIODevicePropertyDeviceMaster": kCMIODevicePropertyDeviceMaster,
+        "kCMIODevicePropertyExcludeNonDALAccess": kCMIODevicePropertyExcludeNonDALAccess,
+        "kCMIODevicePropertyClientSyncDiscontinuity": kCMIODevicePropertyClientSyncDiscontinuity,
+        "kCMIODevicePropertySMPTETimeCallback": kCMIODevicePropertySMPTETimeCallback,
+        "kCMIODevicePropertyCanProcessAVCCommand": kCMIODevicePropertyCanProcessAVCCommand,
+        "kCMIODevicePropertyAVCDeviceType": kCMIODevicePropertyAVCDeviceType,
+        "kCMIODevicePropertyAVCDeviceSignalMode": kCMIODevicePropertyAVCDeviceSignalMode,
+        "kCMIODevicePropertyCanProcessRS422Command": kCMIODevicePropertyCanProcessRS422Command,
+        "kCMIODevicePropertyLinkedCoreAudioDeviceUID": kCMIODevicePropertyLinkedCoreAudioDeviceUID,
+        "kCMIODevicePropertyVideoDigitizerComponents": kCMIODevicePropertyVideoDigitizerComponents,
+        "kCMIODevicePropertySuspendedByUser": kCMIODevicePropertySuspendedByUser,
+        "kCMIODevicePropertyLinkedAndSyncedCoreAudioDeviceUID": kCMIODevicePropertyLinkedAndSyncedCoreAudioDeviceUID,
+        "kCMIODevicePropertyIIDCInitialUnitSpace": kCMIODevicePropertyIIDCInitialUnitSpace,
+        "kCMIODevicePropertyIIDCCSRData": kCMIODevicePropertyIIDCCSRData,
+        "kCMIODevicePropertyCanSwitchFrameRatesWithoutFrameDrops": kCMIODevicePropertyCanSwitchFrameRatesWithoutFrameDrops,
+        "kCMIODevicePropertyLocation": kCMIODevicePropertyLocation,
+        "kCMIODevicePropertyDeviceHasStreamingError": kCMIODevicePropertyDeviceHasStreamingError]
+        for (propName, prop) in props {
+            var pa = CMIOObjectPropertyAddress(
+                mSelector: CMIOObjectPropertySelector(prop),
+                mScope: CMIOObjectPropertyScope(kCMIOObjectPropertyScopeWildcard),
+                mElement: CMIOObjectPropertyElement(kCMIOObjectPropertyElementWildcard)
+            )
+            var (dataSize, dataUsed) = (UInt32(0), UInt32(0))
+            if CMIOObjectGetPropertyDataSize(id, &pa, 0, nil, &dataSize) == OSStatus(kCMIOHardwareNoError) {
+                if let data = malloc(Int(dataSize)) {
+                    CMIOObjectGetPropertyData(id, &pa, 0, nil, dataSize, &dataUsed, data)
+                    logger.info("  \(propName): \(data.assumingMemoryBound(to: UInt8.self).pointee)")
+                }
+            }
+        }
+        logger.info("")
+    }
+
     public var description: String { return "\(captureDevice.manufacturer)/\(captureDevice.localizedName)" }
 }
